@@ -4,6 +4,12 @@ import plotly.graph_objects as go
 from math import gcd
 import math
 
+try:
+    import plotly.graph_objects as go
+except ModuleNotFoundError as e:
+    st.error("Plotly is missing. `pip install plotly` or check requirements.txt.")
+    st.stop()
+    
 st.set_page_config(page_title="Shor's Algorithm: Quantum Threat to Digital Trust", layout="wide")
 
 # Color scheme
