@@ -103,26 +103,35 @@ def shor_factorization_demo(N, a):
     return int(p), int(q), f"Succès : période r={r}"
 
 
-def plot_periodicity(a, N):
-    x = np.arange(1, 21)
+def plot_periodicity(a, N, x_max=20):
+    x = np.arange(1, x_max + 1)
     y = [(int(a) ** int(i)) % N for i in x]
+    r = find_period(a, N, max_x=x_max)
+
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
             x=x,
             y=y,
             mode='lines+markers',
+            name=f'f(x)= {a}^x mod {N}',
             line=dict(color=COLOR_QUANTUM, width=3),
-            marker=dict(size=10),
+            marker=dict(size=8),
         )
     )
+
+    if r is not None:
+        for k in range(1, int(x_max / r) + 1):
+            fig.add_vline(x=k * r, line_dash='dot', line_color=COLOR_KEY, opacity=0.6,
+                          annotation_text=f'r={r}', annotation_position='top right')
+
     fig.update_layout(
-        title=f"Le motif caché : $f(x) = {a}^x \\pmod{{{N}}}$",
-        xaxis_title="x (Entrée)",
-        yaxis_title="f(x) (Résultat)",
+        title=f"Motif périodique : f(x) = {a}^x mod {N} (période r={r if r else 'non trouvé'})",
+        xaxis_title="x (pas)",
+        yaxis_title="f(x)",
         template="plotly_dark",
-        height=300,
-        margin=dict(l=20, r=20, t=40, b=20),
+        height=340,
+        margin=dict(l=20, r=20, t=50, b=20),
     )
     return fig
 
@@ -248,8 +257,25 @@ with tabs[4]:
     st.markdown("Shor transforme la factorisation en un problème de **recherche de période**.")
 
     st.subheader("Visualisation de la Périodicité")
-    st.plotly_chart(plot_periodicity(a=2, N=15), use_container_width=True)
-    st.caption("Ici, pour N=15, la séquence se répète tous les r=4 cycles. Trouver 'r' permet de déduire p et q.")
+    col1, col2 = st.columns([2, 3])
+    with col1:
+        N_period = st.selectbox("Choisir N (semi-premier)", [15, 21, 35, 77, 143, 221, 391], index=0)
+        a_period = st.selectbox("Choisir a (coprime avec N)", [x for x in range(2, N_period) if is_coprime(x, N_period)], index=0)
+        x_max = st.slider("Longueur de la séquence (x max)", min_value=8, max_value=50, value=20)
+
+    with col2:
+        fig_period = plot_periodicity(a=a_period, N=N_period, x_max=x_max)
+        st.plotly_chart(fig_period, use_container_width=True)
+
+    r = find_period(a_period, N_period, max_x=x_max)
+    if r is not None:
+        st.success(f"Période détectée : r = {r} (pour N={N_period}, a={a_period})")
+    else:
+        st.warning(f"Période non trouvée dans x<= {x_max}. Essayez d'augmenter x_max ou de changer 'a'.")
+
+    st.markdown("**Table de valeurs**")
+    coeffs = [(x, (a_period**x) % N_period) for x in range(1, x_max + 1)]
+    st.table([{"x": x, "f(x)": y} for x, y in coeffs])
 
     st.markdown("---")
     st.subheader("Le Pipeline Quantique")
